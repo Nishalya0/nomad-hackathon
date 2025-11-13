@@ -1,8 +1,13 @@
-# Dependencies (DO NOT UPLOAD - too big!)
+# Dependencies
 node_modules/
 
-# Environment files (keep credentials private)
+# Build outputs
+dist/
+build/
+
+# Environment files
 .env
+firebase-config.js
 
 # OS files
 .DS_Store

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOMAD Live Demo - Saturnalia 2025</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .status {
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .status.connected {
+      background: rgba(76,175,80,0.3);
+      border: 2px solid #4CAF50;
+    }
+    
+    .status.disconnected {
+      background: rgba(244,67,54,0.3);
+      border: 2px solid #f44336;
+    }
+    
+    .vibe-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .vibe-btn {
+      padding: 20px;
+      font-size: 1.5em;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .vibe-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    
+    .vibe-btn:active {
+      transform: translateY(0);
+    }
+    
+    .stages {
+      display: grid;
+      gap: 20px;
+    }
+    
+    .stage-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    .stage-name {
+      font-size: 1.5em;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    
+    .vibe-display {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .vibe-item {
+      text-align: center;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+    
+    .vibe-emoji {
+      font-size: 2em;
+      display: block;
+    }
+    
+    .vibe-count {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    
+    .crowd-bar {
+      width: 100%;
+      height: 30px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .crowd-fill {
+      height: 100%;
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .crowd-low { background: #4CAF50; }
+    .crowd-medium { background: #FF9800; }
+    .crowd-high { background: #f44336; }
+    
+    .alert {
+      padding: 15px;
+      background: rgba(255,152,0,0.9);
+      border-radius: 10px;
+      margin-top: 10px;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .user-count {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 20px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎪 NOMAD Live Demo</h1>
+      <p>Real-Time Festival Navigator</p>
+    </header>
+    
+    <div id="status" class="status disconnected">
+      <strong>Status:</strong> <span id="status-text">Connecting...</span>
+    </div>
+    
+    <div class="vibe-controls">
+      <button class="vibe-btn" onclick="submitVibe('fire')">🔥 It's Lit!</button>
+      <button class="vibe-btn" onclick="submitVibe('party')">🎉 Party!</button>
+      <button class="vibe-btn" onclick="submitVibe('sleep')">😴 Chill</button>
+      <button class="vibe-btn" onclick="submitVibe('neutral')">😐 Meh</button>
+    </div>
+    
+    <div id="stages" class="stages"></div>
+    
+    <div class="user-count">
+      👥 <span id="user-count">0</span> users connected
+    </div>
+  </div>
+  
+  <script>
+    const socket = io('http://localhost:3001');
+    const festivalId = 'coachella-2025';
+    const currentStage = 'main-stage';
+    let userId = 'demo-user-' + Math.random().toString(36).substring(7);
+    let stagesData = {};
+    
+    // Connection handlers
+    socket.on('connect', () => {
+      updateStatus(true);
+      socket.emit('join-festival', { festivalId, userId });
+    });
+    
+    socket.on('disconnect', () => {
+      updateStatus(false);
+    });
+    
+    socket.on('welcome', (data) => {
+      console.log('Welcome:', data);
+      if (data.currentVibes) {
+        stagesData = data.currentVibes;
+        renderStages();
+      }
+      if (data.userCount) {
+        document.getElementById('user-count').textContent = data.userCount;
+      }
+    });
+    
+    socket.on('vibe-update', (data) => {
+      console.log('Vibe update:', data);
+      updateStageVibes(data);
+    });
+    
+    socket.on('crowd-update', (data) => {
+      console.log('Crowd update:', data);
+      updateStageCrowd(data);
+    });
+    
+    socket.on('crowd-alert', (data) => {
+      console.log('Alert:', data);
+      showAlert(data);
+    });
+    
+    function updateStatus(connected) {
+      const statusEl = document.getElementById('status');
+      const statusText = document.getElementById('status-text');
+      
+      if (connected) {
+        statusEl.className = 'status connected';
+        statusText.textContent = '✅ Connected to NOMAD';
+      } else {
+        statusEl.className = 'status disconnected';
+        statusText.textContent = '❌ Disconnected';
+      }
+    }
+    
+    function submitVibe(emoji) {
+      socket.emit('submit-vibe', {
+        festivalId,
+        stageId: currentStage,
+        emoji,
+        userId,
+        timestamp: Date.now()
+      });
+      
+      // Visual feedback
+      event.target.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        event.target.style.transform = 'scale(1)';
+      }, 100);
+    }
+    
+    function renderStages() {
+      const container = document.getElementById('stages');
+      container.innerHTML = '';
+      
+      Object.entries(stagesData).forEach(([stageId, data]) => {
+        const card = createStageCard(stageId, data);
+        container.appendChild(card);
+      });
+    }
+    
+    function createStageCard(stageId, data) {
+      const card = document.createElement('div');
+      card.className = 'stage-card';
+      card.id = `stage-${stageId}`;
+      
+      const vibes = data.vibes || { fire: 0, party: 0, sleep: 0, neutral: 0 };
+      const crowd = data.crowd || { current: 0, capacity: 1000, percent: 0 };
+      
+      card.innerHTML = `
+        <div class="stage-name">${data.stageName || stageId}</div>
+        <div class="vibe-display">
+          <div class="vibe-item">
+            <span class="vibe-emoji">🔥</span>
+            <div class="vibe-count">${vibes.fire}</div>
+          </div>
+          <div class="vibe-item">
+            <span class="vibe-emoji">🎉</span>
+            <div class="vibe-count">${vibes.party}</div>
+          </div>
+          <div class="vibe-item">
+            <span class="vibe-emoji">😴</span>
+            <div class="vibe-count">${vibes.sleep}</div>
+          </div>
+          <div class="vibe-item">
+            <span class="vibe-emoji">😐</span>
+            <div class="vibe-count">${vibes.neutral}</div>
+          </div>
+        </div>
+        <div class="crowd-bar">
+          <div class="crowd-fill crowd-${getCrowdLevel(crowd.percent)}" 
+               style="width: ${crowd.percent}%">
+            ${crowd.percent}% Full (${crowd.current}/${crowd.capacity})
+          </div>
+        </div>
+      `;
+      
+      return card;
+    }
+    
+    function updateStageVibes(data) {
+      if (!stagesData[data.stageId]) {
+        stagesData[data.stageId] = {};
+      }
+      stagesData[data.stageId].vibes = data.vibes;
+      stagesData[data.stageId].crowd = data.crowd;
+      renderStages();
+    }
+    
+    function updateStageCrowd(data) {
+      if (!stagesData[data.stageId]) {
+        stagesData[data.stageId] = { stageName: data.stageName };
+      }
+      stagesData[data.stageId].crowd = data.crowd;
+      renderStages();
+    }
+    
+    function getCrowdLevel(percent) {
+      if (percent < 50) return 'low';
+      if (percent < 80) return 'medium';
+      return 'high';
+    }
+    
+    function showAlert(data) {
+      // Add temporary alert to the stage card
+      const stageCard = document.getElementById(`stage-${data.stageId}`);
+      if (stageCard) {
+        const existingAlert = stageCard.querySelector('.alert');
+        if (existingAlert) existingAlert.remove();
+        
+        const alert = document.createElement('div');
+        alert.className = 'alert';
+        alert.textContent = data.message;
+        stageCard.appendChild(alert);
+        
+        setTimeout(() => alert.remove(), 5000);
+      }
+    }
+  </script>
+</body>
+</html>

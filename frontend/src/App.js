@@ -4,6 +4,7 @@ import './App.css';
 import FestivalMap from './components/FestivalMap';
 import VibePanel from './components/VibePanel';
 import VibeDisplay from './components/VibeDisplay';
+import ScheduleBuilder from './components/ScheduleBuilder';
 
 const socket = io('http://localhost:5000');
 
@@ -101,6 +102,7 @@ function App() {
         }}>
           <div>
             <VibePanel onSubmitVibe={handleSubmitVibe} />
+              <ScheduleBuilder />  {/* ADD THIS LINE */}
             <VibeDisplay vibeData={vibeData} />
           </div>
           

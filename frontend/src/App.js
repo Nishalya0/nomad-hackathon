@@ -1,8 +1,48 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 import './App.css';
 import FestivalMap from './components/FestivalMap';
+import VibePanel from './components/VibePanel';
+import VibeDisplay from './components/VibeDisplay';
+
+const socket = io('http://localhost:5000');
 
 function App() {
+  const [vibeData, setVibeData] = useState({});
+  const [isConnected, setIsConnected] = useState(false);
+  
+  useEffect(() => {
+    // Socket connection handlers
+    socket.on('connect', () => {
+      console.log('✅ Connected to server');
+      setIsConnected(true);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('❌ Disconnected from server');
+      setIsConnected(false);
+    });
+    
+    // Listen for vibe updates
+    socket.on('vibeUpdate', (data) => {
+      setVibeData(data);
+    });
+    
+    // Cleanup on unmount
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('vibeUpdate');
+    };
+  }, []);
+  
+  const handleSubmitVibe = ({ stageId, emoji }) => {
+    socket.emit('submitVibe', { stageId, emoji });
+    
+    // Show success notification (optional)
+    alert(`Vibe submitted! ${emoji} at ${stageId}`);
+  };
+  
   return (
     <div className="App" style={{ background: '#1a1a2e', minHeight: '100vh' }}>
       <header style={{ 
@@ -34,27 +74,52 @@ function App() {
         }}>
           TIET Patiala | November 13-16, 2025
         </p>
+        <div style={{
+          marginTop: '10px',
+          padding: '5px 15px',
+          background: isConnected ? '#00ff00' : '#ff0000',
+          display: 'inline-block',
+          borderRadius: '20px',
+          fontSize: '12px',
+          color: '#000',
+          fontWeight: 'bold'
+        }}>
+          {isConnected ? '🟢 LIVE' : '🔴 OFFLINE'}
+        </div>
       </header>
       
       <main style={{ 
         padding: '40px 20px',
-        maxWidth: '1200px',
+        maxWidth: '1400px',
         margin: '0 auto'
       }}>
-        <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ 
-            color: '#e94560', 
-            fontSize: '28px',
-            marginBottom: '10px'
-          }}>
-            🗺️ Live Festival Map
-          </h2>
-          <p style={{ color: '#b0b0b0', fontSize: '16px' }}>
-            Interactive campus map showing all venues at Saturnalia 2025
-          </p>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '300px 1fr', 
+          gap: '20px',
+          marginBottom: '30px'
+        }}>
+          <div>
+            <VibePanel onSubmitVibe={handleSubmitVibe} />
+            <VibeDisplay vibeData={vibeData} />
+          </div>
+          
+          <div>
+            <div style={{ marginBottom: '20px' }}>
+              <h2 style={{ 
+                color: '#e94560', 
+                fontSize: '28px',
+                marginBottom: '10px'
+              }}>
+                🗺️ Live Festival Map
+              </h2>
+              <p style={{ color: '#b0b0b0', fontSize: '16px' }}>
+                Interactive campus map showing all venues with real-time vibe data
+              </p>
+            </div>
+            <FestivalMap vibeData={vibeData} />
+          </div>
         </div>
-        
-        <FestivalMap />
         
         <div style={{ 
           marginTop: '40px',
@@ -64,7 +129,7 @@ function App() {
           textAlign: 'center'
         }}>
           <p style={{ color: '#fff', margin: 0 }}>
-            ✨ 50 Years of Excellence | AI Schedule Builder, Live Vibe Updates, Smart Navigation
+            ✨ 50 Years of Excellence | Real-Time Vibe Tracking | Smart Festival Navigation
           </p>
         </div>
       </main>

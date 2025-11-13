@@ -1,0 +1,20 @@
+# Dependencies (DO NOT UPLOAD - too big!)
+node_modules/
+
+# Environment files (keep credentials private)
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/

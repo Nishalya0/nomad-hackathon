@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>REST API Test</title>
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    #output {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      margin-top: 20px;
+    }
+    h1 {
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 NOMAD REST API Test</h1>
+  
+  <div>
+    <button onclick="testArtists()">GET Artists</button>
+    <button onclick="testStages()">GET Stages</button>
+    <button onclick="testRoute()">GET Route</button>
+    <button onclick="testSchedule()">POST Schedule</button>
+    <button onclick="testVibes()">GET Vibes</button>
+  </div>
+  
+  <h2>Response:</h2>
+  <div id="output">Click a button to test</div>
+  
+  <script>
+    const API = 'http://localhost:3002';
+    
+    async function testArtists() {
+      const res = await fetch(`${API}/api/artists`);
+      const data = await res.json();
+      show('GET /api/artists', data);
+    }
+    
+    async function testStages() {
+      const res = await fetch(`${API}/api/stages`);
+      const data = await res.json();
+      show('GET /api/stages', data);
+    }
+    
+    async function testRoute() {
+      const res = await fetch(`${API}/api/route?from=main-stage&to=sahara-tent`);
+      const data = await res.json();
+      show('GET /api/route', data);
+    }
+    
+    async function testSchedule() {
+      const res = await fetch(`${API}/api/schedule/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 'test-user',
+          preferredArtists: ['artist-1', 'artist-2', 'artist-3'],
+          preferences: { fomoLevel: 8, crowdTolerance: 3 }
+        })
+      });
+      const data = await res.json();
+      show('POST /api/schedule/generate', data);
+    }
+    
+    async function testVibes() {
+      const res = await fetch(`${API}/api/vibes/main-stage`);
+      const data = await res.json();
+      show('GET /api/vibes/main-stage', data);
+    }
+    
+    function show(endpoint, data) {
+      document.getElementById('output').textContent = 
+        `Endpoint: ${endpoint}\n\n` + JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>

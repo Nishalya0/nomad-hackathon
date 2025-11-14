@@ -196,11 +196,12 @@ io.on('connection', (socket) => {
 // Start systems after server starts
 setTimeout(async () => {
   // Start crowd simulation
-  simulator = new CrowdSimulator(io, 'coachella-2025');
-  await simulator.start();
+
   
   // Start notification system
-  notificationSystem = new NotificationSystem(io, 'coachella-2025');
+simulator = new CrowdSimulator(io, 'saturnalia-2025');
+  await simulator.start();
+notificationSystem = new NotificationSystem(io, 'saturnalia-2025');
   await notificationSystem.start();
 }, 5000);
 

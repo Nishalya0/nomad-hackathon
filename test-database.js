@@ -3,7 +3,7 @@ const dbHelpers = require('./database-helpers');
 async function testDatabase() {
   console.log('🧪 Testing Database Functions\n');
   
-  const festivalId = 'coachella-2025';
+  const festivalId = 'Saturnalia-2025';
   
   try {
     // Test 1: Get all artists

@@ -1,195 +1,223 @@
-// Sample data for testing - will replace with real Saturnalia data later
+// Saturnalia 2025 - Golden Jubilee Edition
+// TIET Patiala Festival Data
+
+const festivalInfo = {
+  id: 'saturnalia-2025',
+  name: 'Saturnalia 2025 - Golden Jubilee Edition',
+  location: 'Thapar Institute of Engineering & Technology, Patiala',
+  dates: {
+    start: '2025-11-13',
+    end: '2025-11-16'
+  },
+  edition: '50th Edition',
+  expectedFootfall: 20000,
+  coordinates: {
+    lat: 30.3549,
+    lng: 76.3656
+  }
+};
+
+const stages = [
+  {
+    id: 'mainstage',
+    name: 'Main Stage',
+    capacity: 8000,
+    type: 'outdoor',
+    coordinates: { lat: 30.3549, lng: 76.3656 },
+    description: 'Primary performance arena for headlining acts'
+  },
+  {
+    id: 'openair',
+    name: 'Open Air Theatre',
+    capacity: 5000,
+    type: 'outdoor',
+    coordinates: { lat: 30.3560, lng: 76.3645 },
+    description: 'Outdoor venue for cultural performances'
+  },
+  {
+    id: 'techzone',
+    name: 'Tech Exhibition Arena',
+    capacity: 3000,
+    type: 'indoor',
+    coordinates: { lat: 30.3540, lng: 76.3670 },
+    description: 'Innovation showcase and tech competitions'
+  },
+  {
+    id: 'indoorauditorium',
+    name: 'Indoor Auditorium',
+    capacity: 2500,
+    type: 'indoor',
+    coordinates: { lat: 30.3545, lng: 76.3650 },
+    description: 'Classical performances and intimate shows'
+  },
+  {
+    id: 'quadrangle',
+    name: 'Campus Quadrangle',
+    capacity: 4000,
+    type: 'outdoor',
+    coordinates: { lat: 30.3555, lng: 76.3660 },
+    description: 'Central open space for dance battles and flash mobs'
+  },
+  {
+    id: 'foodcourt',
+    name: 'Festival Food Court',
+    capacity: 2000,
+    type: 'outdoor',
+    coordinates: { lat: 30.3550, lng: 76.3665 },
+    description: 'Dining and entertainment zone'
+  }
+];
 
 const sampleArtists = [
-  // Headliners (Main Stage)
   {
     id: 'artist-1',
-    name: 'The Headliners',
-    genre: 'Rock',
-    stage: 'main-stage',
-    startTime: '2025-04-11T21:00:00',
-    endTime: '2025-04-11T22:30:00',
+    name: 'Amit Trivedi',
+    genre: 'Bollywood/Indie',
+    stage: 'mainstage',
+    startTime: '2025-11-15T21:00:00',  // Day 3, 9 PM
+    endTime: '2025-11-15T22:30:00',    // 90 min duration
     duration: 90,
     popularity: 95,
-    description: 'Main headliner act'
+    description: 'Renowned Bollywood composer and singer',
+    day: 3
   },
   {
     id: 'artist-2',
-    name: 'Electronic Dreams',
-    genre: 'EDM',
-    stage: 'sahara-tent',
-    startTime: '2025-04-11T20:30:00',
-    endTime: '2025-04-11T22:00:00',
-    duration: 90,
-    popularity: 90,
-    description: 'Electronic dance music'
+    name: 'The Local Train',
+    genre: 'Rock/Alternative',
+    stage: 'mainstage',
+    startTime: '2025-11-14T20:00:00',  // Day 2, 8 PM
+    endTime: '2025-11-14T21:15:00',    // 75 min
+    duration: 75,
+    popularity: 88,
+    description: 'Popular Indian rock band',
+    day: 2
   },
-  
-  // Mid-tier artists
   {
     id: 'artist-3',
-    name: 'Indie Collective',
-    genre: 'Indie Rock',
-    stage: 'mojave-stage',
-    startTime: '2025-04-11T19:00:00',
-    endTime: '2025-04-11T20:00:00',
+    name: 'Ritviz',
+    genre: 'Electronic/EDM',
+    stage: 'openair',
+    startTime: '2025-11-15T22:45:00',  // Day 3, 10:45 PM
+    endTime: '2025-11-15T23:45:00',    // 60 min
     duration: 60,
-    popularity: 75,
-    description: 'Popular indie band'
+    popularity: 90,
+    description: 'Electronic music producer and performer',
+    day: 3
   },
   {
     id: 'artist-4',
-    name: 'Jazz Fusion Band',
-    genre: 'Jazz',
-    stage: 'gobi-stage',
-    startTime: '2025-04-11T18:30:00',
-    endTime: '2025-04-11T19:30:00',
+    name: 'Pandit Mujtaba Hussain',
+    genre: 'Classical/Flute',
+    stage: 'indoorauditorium',
+    startTime: '2025-11-13T19:00:00',  // Day 1, 7 PM
+    endTime: '2025-11-13T20:00:00',    // 60 min
     duration: 60,
-    popularity: 70,
-    description: 'Smooth jazz vibes'
+    popularity: 82,
+    description: 'Renowned classical flautist',
+    day: 1
   },
   {
     id: 'artist-5',
-    name: 'Hip Hop Collective',
-    genre: 'Hip Hop',
-    stage: 'sahara-tent',
-    startTime: '2025-04-11T19:00:00',
-    endTime: '2025-04-11T20:00:00',
+    name: 'When Chai Met Toast',
+    genre: 'Indie/Folk',
+    stage: 'openair',
+    startTime: '2025-11-14T18:30:00',  // Day 2, 6:30 PM
+    endTime: '2025-11-14T19:30:00',    // 60 min
     duration: 60,
     popularity: 85,
-    description: 'High energy hip hop'
+    description: 'Popular indie folk band',
+    day: 2
   },
-  
-  // Smaller acts
   {
     id: 'artist-6',
-    name: 'Local Band A',
-    genre: 'Alternative',
-    stage: 'sonora-stage',
-    startTime: '2025-04-11T17:00:00',
-    endTime: '2025-04-11T17:45:00',
-    duration: 45,
-    popularity: 50,
-    description: 'Up and coming local act'
+    name: 'Nucleya',
+    genre: 'Bass/Electronic',
+    stage: 'mainstage',
+    startTime: '2025-11-16T21:30:00',  // Day 4, 9:30 PM
+    endTime: '2025-11-16T23:00:00',    // 90 min
+    duration: 90,
+    popularity: 92,
+    description: 'Indian electronic music producer',
+    day: 4
   },
   {
     id: 'artist-7',
-    name: 'Acoustic Duo',
-    genre: 'Folk',
-    stage: 'gobi-stage',
-    startTime: '2025-04-11T17:00:00',
-    endTime: '2025-04-11T18:00:00',
-    duration: 60,
-    popularity: 60,
-    description: 'Chill acoustic performance'
+    name: 'Prateek Kuhad',
+    genre: 'Indie/Singer-Songwriter',
+    stage: 'openair',
+    startTime: '2025-11-13T20:30:00',  // Day 1, 8:30 PM
+    endTime: '2025-11-13T21:45:00',    // 75 min
+    duration: 75,
+    popularity: 89,
+    description: 'Chart-topping indie singer-songwriter',
+    day: 1
   },
   {
     id: 'artist-8',
-    name: 'DJ Nightshift',
-    genre: 'House',
-    stage: 'yuma-stage',
-    startTime: '2025-04-11T22:00:00',
-    endTime: '2025-04-11T23:30:00',
-    duration: 90,
-    popularity: 80,
-    description: 'Late night house music'
+    name: 'Lost Stories',
+    genre: 'Progressive House/EDM',
+    stage: 'mainstage',
+    startTime: '2025-11-16T23:15:00',  // Day 4, 11:15 PM
+    endTime: '2025-11-17T00:30:00',    // 75 min (goes into next day)
+    duration: 75,
+    popularity: 87,
+    description: 'Award-winning DJ duo',
+    day: 4
   }
 ];
 
 // Walking times between stages (in minutes)
 const walkingTimes = {
-  'main-stage': {
-    'sahara-tent': 8,
-    'mojave-stage': 5,
-    'gobi-stage': 10,
-    'sonora-stage': 12,
-    'yuma-stage': 15
-  },
-  'sahara-tent': {
-    'main-stage': 8,
-    'mojave-stage': 6,
-    'gobi-stage': 6,
-    'sonora-stage': 10,
-    'yuma-stage': 8
-  },
-  'mojave-stage': {
-    'main-stage': 5,
-    'sahara-tent': 6,
-    'gobi-stage': 7,
-    'sonora-stage': 9,
-    'yuma-stage': 12
-  },
-  'gobi-stage': {
-    'main-stage': 10,
-    'sahara-tent': 6,
-    'mojave-stage': 7,
-    'sonora-stage': 4,
-    'yuma-stage': 7
-  },
-  'sonora-stage': {
-    'main-stage': 12,
-    'sahara-tent': 10,
-    'mojave-stage': 9,
-    'gobi-stage': 4,
-    'yuma-stage': 5
-  },
-  'yuma-stage': {
-    'main-stage': 15,
-    'sahara-tent': 8,
-    'mojave-stage': 12,
-    'gobi-stage': 7,
-    'sonora-stage': 5
-  }
+  'mainstage-openair': 5,
+  'openair-mainstage': 5,
+  
+  'mainstage-techzone': 7,
+  'techzone-mainstage': 7,
+  
+  'mainstage-indoorauditorium': 4,
+  'indoorauditorium-mainstage': 4,
+  
+  'mainstage-quadrangle': 6,
+  'quadrangle-mainstage': 6,
+  
+  'mainstage-foodcourt': 8,
+  'foodcourt-mainstage': 8,
+  
+  'openair-techzone': 6,
+  'techzone-openair': 6,
+  
+  'openair-indoorauditorium': 5,
+  'indoorauditorium-openair': 5,
+  
+  'openair-quadrangle': 3,
+  'quadrangle-openair': 3,
+  
+  'openair-foodcourt': 4,
+  'foodcourt-openair': 4,
+  
+  'techzone-indoorauditorium': 5,
+  'indoorauditorium-techzone': 5,
+  
+  'techzone-quadrangle': 7,
+  'quadrangle-techzone': 7,
+  
+  'techzone-foodcourt': 4,
+  'foodcourt-techzone': 4,
+  
+  'indoorauditorium-quadrangle': 4,
+  'quadrangle-indoorauditorium': 4,
+  
+  'indoorauditorium-foodcourt': 6,
+  'foodcourt-indoorauditorium': 6,
+  
+  'quadrangle-foodcourt': 3,
+  'foodcourt-quadrangle': 3
 };
 
-// Stage information
-const stages = [
-  {
-    id: 'main-stage',
-    name: 'Main Stage',
-    capacity: 10000,
-    type: 'outdoor',
-    amenities: ['food', 'restrooms', 'merchandise']
-  },
-  {
-    id: 'sahara-tent',
-    name: 'Sahara Tent',
-    capacity: 5000,
-    type: 'tent',
-    amenities: ['bar', 'restrooms']
-  },
-  {
-    id: 'mojave-stage',
-    name: 'Mojave Stage',
-    capacity: 3000,
-    type: 'outdoor',
-    amenities: ['food', 'seating']
-  },
-  {
-    id: 'gobi-stage',
-    name: 'Gobi Stage',
-    capacity: 2500,
-    type: 'tent',
-    amenities: ['bar', 'vip-area']
-  },
-  {
-    id: 'sonora-stage',
-    name: 'Sonora Stage',
-    capacity: 1500,
-    type: 'indoor',
-    amenities: ['ac', 'bar']
-  },
-  {
-    id: 'yuma-stage',
-    name: 'Yuma Stage',
-    capacity: 2000,
-    type: 'tent',
-    amenities: ['bar', 'lighting-special']
-  }
-];
-
 module.exports = {
+  festivalInfo,
+  stages,
   sampleArtists,
-  walkingTimes,
-  stages
+  walkingTimes
 };

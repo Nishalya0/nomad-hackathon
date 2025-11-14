@@ -1,0 +1,18 @@
+:root {
+  --sat-primary: #ffb300;
+  --sat-accent: #fa3c7c;
+  --sat-purple: #5732d2;
+  --sat-dark: #20202c;
+  --sat-gold: #FFD700;
+  --sat-deep-orange: #ff7800;
+  --sat-blue: #2156fa;
+  --sat-bg-gradient: linear-gradient(180deg, #ff7800 0%, #FFD700 100%);
+  --sat-header-radius: 26px;
+  --sat-shadow: 0 4px 16px rgba(50, 32, 16, 0.07);
+  --sat-card-radius: 18px;
+  --font-main: 'Poppins', 'Inter', Arial, sans-serif;
+}
+body {
+  background: #171620;
+  font-family: var(--font-main);
+}

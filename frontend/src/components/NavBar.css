@@ -1,0 +1,81 @@
+.sat-header {
+  background: linear-gradient(90deg, #ff7800 0%, #FFD700 100%);
+  border-radius: 26px 26px 0 0;
+  padding: 15px 0;
+  box-shadow: 0 4px 16px rgba(50, 32, 16, 0.15);
+  margin: 14px auto;
+  max-width: 1600px;
+}
+
+.sat-nav {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  padding: 0 40px;
+  min-height: 80px;
+}
+
+.nav-left {
+  justify-self: start;
+}
+
+.nav-center {
+  justify-self: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-logo-center {
+  height: 120px;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+}
+
+.nav-logo-text {
+  text-align: center;
+}
+
+.nav-right {
+  justify-self: end;
+}
+
+.nav-login-btn {
+  background: #f7b3fa;
+  color: #42326a;
+  font-weight: bold;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 20px;
+  font-size: 16px;
+  box-shadow: 0 3px 10px rgba(100,0,100,0.15);
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-login-btn:hover {
+  background: var(--sat-accent);
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(100,0,100,0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sat-nav {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 20px;
+  }
+  
+  .nav-logo-center {
+    height: 80px;
+  }
+  
+  .nav-login-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+}

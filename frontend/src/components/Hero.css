@@ -1,0 +1,50 @@
+.hero-section {
+  width: 100vw;
+  min-height: 70vh;
+  background: linear-gradient(180deg,#ea9a45 0%, #f85735 60%, #171620 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+.info-bar {
+  background: var(--sat-blue);
+  color: #fff;
+  width: 100vw;
+  padding: 12px 0;
+  text-align: center;
+  font-weight: 500;
+  font-size: 1rem;
+}
+.hero-backdrop {
+  margin-top: 32px;
+  text-align: center;
+}
+.sat-logo {
+  width: 420px;
+  max-width: 100%;
+  margin-bottom: 16px;
+}
+.sat-title {
+  font-family: var(--font-main);
+  font-size: 2.8rem;
+  color: #fff;
+  letter-spacing: 2.5px;
+}
+.sat-50th {
+  color: var(--sat-gold);
+  font-weight: 900;
+  font-size: 1.5em;
+  margin-right: 4px;
+}
+.sat-tagline {
+  font-size: 1.2em;
+  color: #fff;
+  background: #c22e27;
+  padding: 6px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  margin-top: 18px;
+  letter-spacing: 1px;
+  display: inline-block;
+}

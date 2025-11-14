@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOMAD Live Demo - Saturnalia 2025</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,152,0,0.95);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-width: 300px;
+        animation: slideIn 0.3s ease;
+        z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.event-now {
+            background: rgba(244,67,54,0.95);
+            animation: pulse 1s infinite;
+        }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .status {
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .status.connected {
+      background: rgba(76,175,80,0.3);
+      border: 2px solid #4CAF50;
+    }
+    
+    .status.disconnected {
+      background: rgba(244,67,54,0.3);
+      border: 2px solid #f44336;
+    }
+    
+    .vibe-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .vibe-btn {
+      padding: 20px;
+      font-size: 1.5em;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .vibe-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    
+    .vibe-btn:active {
+      transform: translateY(0);
+    }
+    
+    .stages {
+      display: grid;
+      gap: 20px;
+    }
+    
+    .stage-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    .stage-name {
+      font-size: 1.5em;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    
+    .vibe-display {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .vibe-item {
+      text-align: center;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+    
+    .vibe-emoji {
+      font-size: 2em;
+      display: block;
+    }
+    
+    .vibe-count {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    
+    .crowd-bar {
+      width: 100%;
+      height: 30px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .crowd-fill {
+      height: 100%;
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .crowd-low { background: #4CAF50; }
+    .crowd-medium { background: #FF9800; }
+    .crowd-high { background: #f44336; }
+    
+    .alert {
+      padding: 15px;
+      background: rgba(255,152,0,0.9);
+      border-radius: 10px;
+      margin-top: 10px;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .user-count {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 20px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎪 NOMAD Live Demo</h1>
+      <p>Real-Time Festival Navigator</p>
+    </header>
+    <div id="notifications"></div>
+    <div id="status" class="status disconnected">
+      <strong>Status:</strong> <span id="status-text">Connecting...</span>
+    </div>
+    
+    <div class="vibe-controls">
+      <button class="vibe-btn" onclick="submitVibe('fire')">🔥 It's Lit!</button>
+      <button class="vibe-btn" onclick="submitVibe('party')">🎉 Party!</button>
+      <button class="vibe-btn" onclick="submitVibe('sleep')">😴 Chill</button>
+      <button class="vibe-btn" onclick="submitVibe('neutral')">😐 Meh</button>
+    </div>
+    <!-- ========================================== -->
+<!-- MEDIA UPLOAD SECTION -->
+<!-- ========================================== -->
+<div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px;">
+  <h2 style="margin-bottom: 15px;">📸🎥 Share Your Moment</h2>
+  
+  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <input type="file" id="mediaInput" accept="image/*,video/*" capture="environment"
+           style="flex: 1; padding: 10px; border-radius: 5px; border: none; background: white; color: #333;">
+    <button onclick="uploadMedia()" 
+            style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+      📤 Upload
+    </button>
+  </div>
+  
+  <input type="text" id="mediaCaption" placeholder="Add a caption..." 
+         style="width: 100%; padding: 10px; border-radius: 5px; border: none; margin-bottom: 10px;">
+  
+  <div style="font-size: 12px; opacity: 0.7; margin-bottom: 10px;">
+    📸 Photos (max 5MB) | 🎥 Videos (max 50MB)
+  </div>
+  
+  <div id="uploadStatus" style="font-size: 14px; text-align: center;"></div>
+</div>
+
+<!-- ========================================== -->
+<!-- MEDIA FEED SECTION -->
+<!-- ========================================== -->
+<div style="margin-top: 30px;">
+  <h2 style="margin-bottom: 15px;">🔥 Popular Moments</h2>
+  
+  <div id="mediaLoading" style="text-align: center; padding: 40px;">
+    ⏳ Loading media...
+  </div>
+  
+  <div id="mediaGallery" 
+       style="display: none; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+  </div>
+</div>
+
+    <div id="stages" class="stages"></div>
+    
+    <div class="user-count">
+      👥 <span id="user-count">0</span> users connected
+    </div>
+
+  </div>
+  
+  <script>
+    const socket = io('http://localhost:3001');
+    const currentStage = 'main-stage';
+    const festivalId = 'saturnalia-2025';
+let userId = 'demo-user-' + Math.random().toString(36).substring(7);
+
+// ==========================================
+// GET CURRENT STAGE FUNCTION
+// ==========================================
+function getCurrentStage() {
+  // If you have GPS/stage selector, use that
+  // For now, default to mainstage
+  const selector = document.getElementById('stageSelect');
+  if (selector && selector.value) {
+    return selector.value;
+  }
+  return 'mainstage'; // Default stage
+}
+
+    let stagesData = {};
+    
+    // Connection handlers
+    socket.on('connect', () => {
+      updateStatus(true);
+      socket.emit('join-festival', { festivalId, userId });
+    });
+    
+    socket.on('disconnect', () => {
+      updateStatus(false);
+    });
+    
+    socket.on('welcome', (data) => {
+      console.log('Welcome:', data);
+      if (data.currentVibes) {
+        stagesData = data.currentVibes;
+        renderStages();
+      }
+      if (data.userCount) {
+        document.getElementById('user-count').textContent = data.userCount;
+      }
+    });
+    
+    socket.on('vibe-update', (data) => {
+      console.log('Vibe update:', data);
+      updateStageVibes(data);
+    });
+    
+    socket.on('crowd-update', (data) => {
+      console.log('Crowd update:', data);
+      updateStageCrowd(data);
+    });
+    
+    socket.on('crowd-alert', (data) => {
+      console.log('Alert:', data);
+      showAlert(data);
+    });
+
+    // Handle notifications
+    socket.on('schedule-notification', (data) => {
+        console.log('Notification:', data);
+        showNotification(data);
+    });
+
+    function showNotification(data) {
+        const container = document.getElementById('notifications');
+  
+        const notification = document.createElement('div');
+        notification.className = `notification ${data.type || ''}`;
+        notification.innerHTML = `
+        <strong>${data.type === 'event-now' ? '🔴 LIVE NOW' : '📢 Coming Soon'}</strong>
+        <p>${data.message}</p>
+  ` ;
+  
+        container.appendChild(notification);
+  
+        // Auto-remove after 8 seconds
+        setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+        }, 8000);
+    }
+    
+    function updateStatus(connected) {
+      const statusEl = document.getElementById('status');
+      const statusText = document.getElementById('status-text');
+      
+      if (connected) {
+        statusEl.className = 'status connected';
+        statusText.textContent = '✅ Connected to NOMAD';
+      } else {
+        statusEl.className = 'status disconnected';
+        statusText.textContent = '❌ Disconnected';
+      }
+    }
+    
+    function submitVibe(emoji) {
+      socket.emit('submit-vibe', {
+        festivalId,
+        stageId: currentStage,
+        emoji,
+        userId,
+        timestamp: Date.now()
+      });
+      
+      // Visual feedback
+      event.target.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        event.target.style.transform = 'scale(1)';
+      }, 100);
+    }
+    
+    function renderStages() {
+      const container = document.getElementById('stages');
+      container.innerHTML = '';
+      
+      Object.entries(stagesData).forEach(([stageId, data]) => {
+        const card = createStageCard(stageId, data);
+        container.appendChild(card);
+      });
+    }
+    
+    function createStageCard(stageId, data) {
+      const card = document.createElement('div');
+      card.className = 'stage-card';
+      card.id = `stage-${stageId}`;
+      
+      const vibes = data.vibes || { fire: 0, party: 0, sleep: 0, neutral: 0 };
+      const crowd = data.crowd || { current: 0, capacity: 1000, percent: 0 };
+      
+      card.innerHTML = `
+        <div class="stage-name">${data.stageName || stageId}</div>
+        <div class="vibe-display">
+          <div class="vibe-item">
+            <span class="vibe-emoji">🔥</span>
+            <div class="vibe-count">${vibes.fire}</div>
+          </div>
+          <div class="vibe-item">
+            <span class="vibe-emoji">🎉</span>
+            <div class="vibe-count">${vibes.party}</div>
+          </div>
+          <div class="vibe-item">
+            <span class="vibe-emoji">😴</span>
+            <div class="vibe-count">${vibes.sleep}</div>
+          </div>
+          <div class="vibe-item">
+            <span class="vibe-emoji">😐</span>
+            <div class="vibe-count">${vibes.neutral}</div>
+          </div>
+        </div>
+        <div class="crowd-bar">
+          <div class="crowd-fill crowd-${getCrowdLevel(crowd.percent)}" 
+               style="width: ${crowd.percent}%">
+            ${crowd.percent}% Full (${crowd.current}/${crowd.capacity})
+          </div>
+        </div>
+      `;
+      
+      return card;
+    }
+    
+    function updateStageVibes(data) {
+      if (!stagesData[data.stageId]) {
+        stagesData[data.stageId] = {};
+      }
+      stagesData[data.stageId].vibes = data.vibes;
+      stagesData[data.stageId].crowd = data.crowd;
+      renderStages();
+    }
+    
+    function updateStageCrowd(data) {
+      if (!stagesData[data.stageId]) {
+        stagesData[data.stageId] = { stageName: data.stageName };
+      }
+      stagesData[data.stageId].crowd = data.crowd;
+      renderStages();
+    }
+    
+    function getCrowdLevel(percent) {
+      if (percent < 50) return 'low';
+      if (percent < 80) return 'medium';
+      return 'high';
+    }
+    
+    function showAlert(data) {
+      // Add temporary alert to the stage card
+      const stageCard = document.getElementById(`stage-${data.stageId}`);
+      if (stageCard) {
+        const existingAlert = stageCard.querySelector('.alert');
+        if (existingAlert) existingAlert.remove();
+        
+        const alert = document.createElement('div');
+        alert.className = 'alert';
+        alert.textContent = data.message;
+        stageCard.appendChild(alert);
+        
+        setTimeout(() => alert.remove(), 5000);
+      }
+    }
+    // ==========================================
+// MEDIA UPLOAD FUNCTIONALITY
+// ==========================================
+
+async function uploadMedia() {
+  const fileInput = document.getElementById('mediaInput');
+  const caption = document.getElementById('mediaCaption').value;
+  const status = document.getElementById('uploadStatus');
+  
+  if (!fileInput.files[0]) {
+    status.textContent = '❌ Please select a file';
+    status.style.color = '#f44336';
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  const isVideo = file.type.startsWith('video');
+  const fileSize = (file.size / 1024 / 1024).toFixed(2);
+  
+  // Check size
+  const maxSize = isVideo ? 50 : 5;
+  if (file.size > maxSize * 1024 * 1024) {
+    status.textContent = `❌ Too large! Max ${maxSize}MB`;
+    status.style.color = '#f44336';
+    return;
+  }
+  
+  status.textContent = `📤 Uploading ${isVideo ? 'video' : 'photo'} (${fileSize}MB)...`;
+  status.style.color = '#FF9800';
+  
+  const currentStage = getCurrentStage ? getCurrentStage() : 'mainstage';
+  
+  const formData = new FormData();
+  formData.append('media', file);
+  formData.append('festivalId', festivalId);
+  formData.append('stageId', currentStage);
+  formData.append('userId', userId);
+  formData.append('location', JSON.stringify({ lat: 0, lng: 0 }));
+  formData.append('caption', caption);
+  
+  try {
+    const response = await fetch('http://localhost:3001/upload-media', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      status.textContent = '✅ Uploaded successfully!';
+      status.style.color = '#4CAF50';
+      fileInput.value = '';
+      document.getElementById('mediaCaption').value = '';
+      setTimeout(() => status.textContent = '', 3000);
+    } else {
+      status.textContent = '❌ Failed: ' + data.error;
+      status.style.color = '#f44336';
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    status.textContent = '❌ Error';
+    status.style.color = '#f44336';
+  }
+}
+
+// Listen for new media
+socket.on('new-media', (data) => {
+  console.log('📸 New media:', data);
+  addMediaToGallery(data.media);
+});
+
+// Listen for likes
+socket.on('media-liked', (data) => {
+  updateMediaLikes(data.mediaId, data.likes);
+});
+
+// Add media to gallery
+function addMediaToGallery(media) {
+  const gallery = document.getElementById('mediaGallery');
+  
+  if (document.getElementById(`media-${media.id}`)) return;
+  
+  const card = document.createElement('div');
+  card.id = `media-${media.id}`;
+  card.style.cssText = 'background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; transition: transform 0.2s;';
+  card.onmouseenter = () => card.style.transform = 'scale(1.05)';
+  card.onmouseleave = () => card.style.transform = 'scale(1)';
+  
+  const mediaEl = media.type === 'video' 
+    ? `<video src="${media.url}" style="width: 100%; height: 200px; object-fit: cover; background: #000;" controls></video>`
+    : `<img src="${media.url}" style="width: 100%; height: 200px; object-fit: cover;">`;
+  
+  const icon = media.type === 'video' ? '🎥' : '📸';
+  
+  card.innerHTML = `
+    ${mediaEl}
+    <div style="padding: 15px;">
+      <div style="font-size: 16px; margin-bottom: 5px;">${icon}</div>
+      <div style="font-size: 14px; margin-bottom: 10px;">${media.caption || '<em style="opacity: 0.6;">No caption</em>'}</div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="font-size: 12px; opacity: 0.8;">📍 ${media.stageId}</span>
+        <button onclick="likeMedia('${media.id}', '${media.stageId}')" 
+                style="background: none; border: none; cursor: pointer; font-size: 18px;">
+          ❤️ <span id="likes-${media.id}">${media.likes || 0}</span>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  gallery.prepend(card);
+}
+
+// Like media
+function likeMedia(mediaId, stageId) {
+  socket.emit('like-media', {
+    festivalId,
+    stageId,
+    mediaId,
+    userId
+  });
+}
+
+// Update likes
+function updateMediaLikes(mediaId, likes) {
+  const el = document.getElementById(`likes-${mediaId}`);
+  if (el) el.textContent = likes;
+}
+
+// Load existing media
+async function loadExistingMedia() {
+  const loading = document.getElementById('mediaLoading');
+  const gallery = document.getElementById('mediaGallery');
+  
+  try {
+    const response = await fetch(`http://localhost:3001/api/media/${festivalId}`);
+    const data = await response.json();
+    
+    if (data.success && data.media) {
+      console.log(`Loading ${data.media.length} media`);
+      data.media.forEach(m => addMediaToGallery(m));
+      loading.style.display = 'none';
+      gallery.style.display = 'grid';
+      if (data.media.length === 0) {
+        gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px;">No media yet!</p>';
+      }
+    }
+  } catch (error) {
+    console.error('Load error:', error);
+    loading.textContent = '❌ Error loading';
+  }
+}
+
+// Load after 2 seconds
+setTimeout(loadExistingMedia, 2000);
+
+  </script>
+</body>
+</html>

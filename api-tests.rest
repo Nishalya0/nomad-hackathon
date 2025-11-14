@@ -1,0 +1,25 @@
+### Test 1: Check if server is running
+GET http://localhost:3001
+
+### Test 2: Get all artists (will add endpoint later)
+GET http://localhost:3001/api/artists
+
+### Test 3: Get single artist (will add endpoint later)
+GET http://localhost:3001/api/artists/artist-1
+
+### Test 4: Get stage vibes (will add endpoint later)
+GET http://localhost:3001/api/vibes/main-stage
+
+### Test 5: Submit vibe (will add endpoint later)
+POST http://localhost:3001/api/vibes
+Content-Type: application/json
+
+{
+  "festivalId": "coachella-2025",
+  "stageId": "main-stage",
+  "emoji": "fire",
+  "userId": "test-user"
+}
+
+### Test 6: Get crowd data (will add endpoint later)
+GET http://localhost:3001/api/crowd/main-stage

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NOMAD WebSocket Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #status {
+      padding: 10px;
+      margin: 10px 0;
+      background: #f0f0f0;
+      border-radius: 5px;
+    }
+    #log {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      max-height: 300px;
+      overflow-y: scroll;
+    }
+    .log-entry {
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
+  <!-- Import Socket.io library -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>🎪 NOMAD Real-Time Test</h1>
+  <div id="status">❌ Disconnected</div>
+  
+  <div>
+    <button onclick="joinFestival()">Join Festival</button>
+    <button onclick="submitVibe('fire')">Send 🔥</button>
+    <button onclick="submitVibe('party')">Send 🎉</button>
+    <button onclick="submitVibe('sleep')">Send 😴</button>
+  </div>
+  
+  <h3>Event Log:</h3>
+  <div id="log"></div>
+  
+  <script>
+    // Connect to your server
+    const socket = io('http://localhost:3001');
+    
+    const status = document.getElementById('status');
+    const log = document.getElementById('log');
+    
+    // When connection succeeds
+    socket.on('connect', () => {
+      status.innerHTML = '✅ Connected: ' + socket.id;
+      status.style.background = '#d4edda';
+      addLog('Connected to server!');
+    });
+    
+    // When we receive welcome message
+    socket.on('welcome', (data) => {
+      addLog('📥 Welcome: ' + JSON.stringify(data));
+    });
+    
+    // When we receive vibe update
+    socket.on('vibe-update', (data) => {
+      addLog('🎭 Vibe Update: ' + JSON.stringify(data));
+    });
+    
+    // When connection drops
+    socket.on('disconnect', () => {
+      status.innerHTML = '❌ Disconnected';
+      status.style.background = '#f8d7da';
+      addLog('Disconnected from server');
+    });
+    
+    // Function to join festival
+    function joinFestival() {
+      socket.emit('join-festival', {
+        festivalId: 'coachella-2025',
+        userId: 'test-user-' + Math.random().toString(36).substring(7)
+      });
+      addLog('📤 Sent: Join festival request');
+    }
+    
+    // Function to submit vibe
+    function submitVibe(emoji) {
+      socket.emit('submit-vibe', {
+        festivalId: 'coachella-2025',
+        stageId: 'main-stage',
+        emoji: emoji,
+        userId: 'test-user',
+        timestamp: Date.now()
+      });
+      addLog('📤 Sent: ' + emoji + ' vibe');
+    }
+    
+    // Function to add log entry
+    function addLog(message) {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+      log.insertBefore(entry, log.firstChild);
+    }
+  </script>
+</body>
+</html>

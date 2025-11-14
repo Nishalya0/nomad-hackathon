@@ -5,9 +5,13 @@ const { CLIENT_EVENTS, SERVER_EVENTS } = require('./events');
 const dbHelpers = require('./database-helpers');
 const helpers = require('./helpers');
 const CrowdSimulator = require('./crowd-simulator');
+const NotificationSystem = require('./notification-system');
+
 
 const app = express();
 const httpServer = createServer(app);
+
+
 
 
 // Initialize Socket.io with CORS
@@ -21,7 +25,7 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3001;
 // Crowd simulator instance
 let simulator = null;
-
+let notificationSystem = null;
 
 // Track connected users per festival
 const festivalRooms = new Map();
@@ -41,6 +45,16 @@ app.get('/stats', (req, res) => {
     }))
   };
   res.json(stats);
+});
+
+// Add this after the /stats route
+app.get('/test-notification', (req, res) => {
+  if (notificationSystem) {
+    notificationSystem.sendTestNotification('🎉 Test notification from server!');
+    res.json({ success: true, message: 'Notification sent!' });
+  } else {
+    res.json({ success: false, message: 'Notification system not ready' });
+  }
 });
 
 // WebSocket connection handler
@@ -179,10 +193,17 @@ io.on('connection', (socket) => {
 });
 
 // Start crowd simulation after a short delay
+// Start systems after server starts
 setTimeout(async () => {
+  // Start crowd simulation
   simulator = new CrowdSimulator(io, 'coachella-2025');
   await simulator.start();
-}, 5000); // Wait 5 seconds after server starts
+  
+  // Start notification system
+  notificationSystem = new NotificationSystem(io, 'coachella-2025');
+  await notificationSystem.start();
+}, 5000);
+
 
 // Start server
 httpServer.listen(PORT, () => {

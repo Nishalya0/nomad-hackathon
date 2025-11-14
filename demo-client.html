@@ -6,6 +6,36 @@
   <title>NOMAD Live Demo - Saturnalia 2025</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,152,0,0.95);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-width: 300px;
+        animation: slideIn 0.3s ease;
+        z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.event-now {
+            background: rgba(244,67,54,0.95);
+            animation: pulse 1s infinite;
+        }
+
     * {
       margin: 0;
       padding: 0;
@@ -178,7 +208,7 @@
       <h1>🎪 NOMAD Live Demo</h1>
       <p>Real-Time Festival Navigator</p>
     </header>
-    
+    <div id="notifications"></div>
     <div id="status" class="status disconnected">
       <strong>Status:</strong> <span id="status-text">Connecting...</span>
     </div>
@@ -195,6 +225,7 @@
     <div class="user-count">
       👥 <span id="user-count">0</span> users connected
     </div>
+
   </div>
   
   <script>
@@ -239,6 +270,31 @@
       console.log('Alert:', data);
       showAlert(data);
     });
+
+    // Handle notifications
+    socket.on('schedule-notification', (data) => {
+        console.log('Notification:', data);
+        showNotification(data);
+    });
+
+    function showNotification(data) {
+        const container = document.getElementById('notifications');
+  
+        const notification = document.createElement('div');
+        notification.className = `notification ${data.type || ''}`;
+        notification.innerHTML = `
+        <strong>${data.type === 'event-now' ? '🔴 LIVE NOW' : '📢 Coming Soon'}</strong>
+        <p>${data.message}</p>
+  ` ;
+  
+        container.appendChild(notification);
+  
+        // Auto-remove after 8 seconds
+        setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+        }, 8000);
+    }
     
     function updateStatus(connected) {
       const statusEl = document.getElementById('status');

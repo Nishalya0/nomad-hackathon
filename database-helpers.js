@@ -1,5 +1,5 @@
 const { database } = require('./firebase-config');
-const { ref, get, set, update, onValue } = require('firebase/database');
+const { ref, get, set, update, onValue, query, orderByChild, limitToLast } = require('firebase/database');
 
 // Get all artists for a festival
 async function getAllArtists(festivalId) {
@@ -101,13 +101,112 @@ async function getAllStages(festivalId) {
   return [];
 }
 
+// ==========================================
+// MEDIA UPLOAD FUNCTIONS (Photos + Videos)
+// ==========================================
+
+// Add media to database
+async function addMedia(festivalId, stageId, mediaId, mediaData) {
+  const mediaRef = ref(database, `festivals/${festivalId}/media/${stageId}/${mediaId}`);
+  await set(mediaRef, mediaData);
+  return mediaData;
+}
+
+// Get all media for a stage
+async function getStageMedia(festivalId, stageId, limit = 20) {
+  try {
+    const mediaRef = ref(database, `festivals/${festivalId}/media/${stageId}`);
+    const mediaQuery = query(mediaRef, orderByChild('likes'), limitToLast(limit));
+    const snapshot = await get(mediaQuery);
+    
+    if (!snapshot.exists()) {
+      return [];
+    }
+    
+    const media = [];
+    snapshot.forEach(child => {
+      media.push(child.val());
+    });
+    
+    return media.reverse(); // Most liked first
+  } catch (error) {
+    console.error('Error in getStageMedia:', error);
+    return [];
+  }
+}
+
+// Like/unlike media
+async function likeMedia(festivalId, stageId, mediaId, userId) {
+  const mediaRef = ref(database, `festivals/${festivalId}/media/${stageId}/${mediaId}`);
+  const snapshot = await get(mediaRef);
+  
+  if (!snapshot.exists()) {
+    throw new Error('Media not found');
+  }
+  
+  const media = snapshot.val();
+  const likedBy = media.likedBy || [];
+  const hasLiked = likedBy.includes(userId);
+  
+  if (hasLiked) {
+    // Unlike
+    media.likedBy = likedBy.filter(id => id !== userId);
+    media.likes = Math.max(0, media.likes - 1);
+  } else {
+    // Like
+    media.likedBy = [...likedBy, userId];
+    media.likes = (media.likes || 0) + 1;
+  }
+  
+  await update(mediaRef, {
+    likes: media.likes,
+    likedBy: media.likedBy
+  });
+  
+  return media;
+}
+
+// Get all media for festival
+async function getAllMedia(festivalId, limit = 50) {
+  try {
+    const mediaRef = ref(database, `festivals/${festivalId}/media`);
+    const snapshot = await get(mediaRef);
+    
+    if (!snapshot.exists()) {
+      console.log('No media found in database yet');
+      return [];
+    }
+    
+    const allMedia = [];
+    snapshot.forEach(stageSnapshot => {
+      stageSnapshot.forEach(mediaSnapshot => {
+        const mediaData = mediaSnapshot.val();
+        if (mediaData) {
+          allMedia.push(mediaData);
+        }
+      });
+    });
+    
+    // Sort by likes (most popular first)
+    return allMedia.sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, limit);
+  } catch (error) {
+    console.error('Error in getAllMedia:', error);
+    return [];
+  }
+}
+
 module.exports = {
   getAllArtists,
   getArtist,
+  getAllStages,
   getStageVibes,
-  updateVibe,
   getStageCrowd,
+  updateVibe,
   updateCrowd,
   listenToVibes,
-  getAllStages
+  // Media functions
+  addMedia,
+  getStageMedia,
+  likeMedia,
+  getAllMedia
 };

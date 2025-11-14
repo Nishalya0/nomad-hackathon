@@ -1,6 +1,14 @@
 const express = require('express');
 const { createServer } = require('node:http');
+
+const cors = require('cors');
 const { Server } = require('socket.io');
+
+const cloudinary = require('./cloudinary-config');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multer = require('multer');
+
+
 const { CLIENT_EVENTS, SERVER_EVENTS } = require('./events');
 const dbHelpers = require('./database-helpers');
 const helpers = require('./helpers');
@@ -9,9 +17,99 @@ const NotificationSystem = require('./notification-system');
 
 
 const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const isVideo = file.mimetype.startsWith('video');
+    return {
+      folder: 'saturnalia-2025',
+      resource_type: 'auto',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'avi', 'webm']
+    };
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
 const httpServer = createServer(app);
 
 
+// ==========================================
+// MEDIA UPLOAD ENDPOINT (Photos + Videos)
+// ==========================================
+app.post('/upload-media', upload.single('media'), async (req, res) => {
+  try {
+    console.log('📸🎥 Media upload request received');
+    
+    const { festivalId, stageId, userId, location, caption } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+    
+    const isVideo = req.file.mimetype.startsWith('video');
+    const mediaType = isVideo ? 'video' : 'photo';
+    
+    console.log(`  Type: ${mediaType}`);
+    console.log(`  Size: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`  User: ${userId}, Stage: ${stageId}`);
+    
+    // Cloudinary already uploaded! URL is at req.file.path
+    const downloadURL = req.file.path;
+    
+    console.log(`  ✅ Uploaded to Cloudinary: ${downloadURL}`);
+    
+    // Save to database
+    const timestamp = Date.now();
+    const mediaId = `media-${timestamp}`;
+    const mediaData = {
+      id: mediaId,
+      url: downloadURL,
+      userId,
+      stageId,
+      location: location ? JSON.parse(location) : null,
+      timestamp,
+      likes: 0,
+      likedBy: [],
+      caption: caption || '',
+      type: mediaType,
+      fileSize: req.file.size,
+      cloudinaryId: req.file.filename
+    };
+    
+    await dbHelpers.addMedia(festivalId, stageId, mediaId, mediaData);
+    console.log('  ✅ Saved to database');
+    
+    // Broadcast to all users
+    io.to(`festival-${festivalId}`).emit('new-media', {
+      stageId,
+      media: mediaData
+    });
+    
+    console.log('  ✅ Broadcast complete\n');
+    
+    res.json({ success: true, media: mediaData });
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get all media endpoint
+app.get('/api/media/:festivalId', async (req, res) => {
+  try {
+    const { festivalId } = req.params;
+    const media = await dbHelpers.getAllMedia(festivalId);
+    res.json({ success: true, media });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 
 // Initialize Socket.io with CORS
@@ -149,6 +247,30 @@ io.on('connection', (socket) => {
         submittedBy: userId
       });
       
+        // ==========================================
+  // MEDIA LIKE HANDLER
+  // ==========================================
+  socket.on('like-media', async (data) => {
+    const { festivalId, stageId, mediaId, userId } = data;
+    
+    console.log(`❤️ ${userId} liked ${mediaId}`);
+    
+    try {
+      const updatedMedia = await dbHelpers.likeMedia(festivalId, stageId, mediaId, userId);
+      
+      io.to(`festival-${festivalId}`).emit('media-liked', {
+        stageId,
+        mediaId,
+        likes: updatedMedia.likes
+      });
+      
+      console.log(`  ✅ Now has ${updatedMedia.likes} likes`);
+    } catch (error) {
+      console.error('Error liking media:', error);
+    }
+  });
+
+
       console.log(`   Broadcast to ${festivalRooms.get(festivalId)?.size || 0} users`);
       
     } catch (error) {

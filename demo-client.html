@@ -219,7 +219,46 @@
       <button class="vibe-btn" onclick="submitVibe('sleep')">😴 Chill</button>
       <button class="vibe-btn" onclick="submitVibe('neutral')">😐 Meh</button>
     </div>
-    
+    <!-- ========================================== -->
+<!-- MEDIA UPLOAD SECTION -->
+<!-- ========================================== -->
+<div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px;">
+  <h2 style="margin-bottom: 15px;">📸🎥 Share Your Moment</h2>
+  
+  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <input type="file" id="mediaInput" accept="image/*,video/*" capture="environment"
+           style="flex: 1; padding: 10px; border-radius: 5px; border: none; background: white; color: #333;">
+    <button onclick="uploadMedia()" 
+            style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+      📤 Upload
+    </button>
+  </div>
+  
+  <input type="text" id="mediaCaption" placeholder="Add a caption..." 
+         style="width: 100%; padding: 10px; border-radius: 5px; border: none; margin-bottom: 10px;">
+  
+  <div style="font-size: 12px; opacity: 0.7; margin-bottom: 10px;">
+    📸 Photos (max 5MB) | 🎥 Videos (max 50MB)
+  </div>
+  
+  <div id="uploadStatus" style="font-size: 14px; text-align: center;"></div>
+</div>
+
+<!-- ========================================== -->
+<!-- MEDIA FEED SECTION -->
+<!-- ========================================== -->
+<div style="margin-top: 30px;">
+  <h2 style="margin-bottom: 15px;">🔥 Popular Moments</h2>
+  
+  <div id="mediaLoading" style="text-align: center; padding: 40px;">
+    ⏳ Loading media...
+  </div>
+  
+  <div id="mediaGallery" 
+       style="display: none; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+  </div>
+</div>
+
     <div id="stages" class="stages"></div>
     
     <div class="user-count">
@@ -230,9 +269,23 @@
   
   <script>
     const socket = io('http://localhost:3001');
-    const festivalId = 'Saturnalia-2025';
     const currentStage = 'main-stage';
-    let userId = 'demo-user-' + Math.random().toString(36).substring(7);
+    const festivalId = 'saturnalia-2025';
+let userId = 'demo-user-' + Math.random().toString(36).substring(7);
+
+// ==========================================
+// GET CURRENT STAGE FUNCTION
+// ==========================================
+function getCurrentStage() {
+  // If you have GPS/stage selector, use that
+  // For now, default to mainstage
+  const selector = document.getElementById('stageSelect');
+  if (selector && selector.value) {
+    return selector.value;
+  }
+  return 'mainstage'; // Default stage
+}
+
     let stagesData = {};
     
     // Connection handlers
@@ -412,6 +465,161 @@
         setTimeout(() => alert.remove(), 5000);
       }
     }
+    // ==========================================
+// MEDIA UPLOAD FUNCTIONALITY
+// ==========================================
+
+async function uploadMedia() {
+  const fileInput = document.getElementById('mediaInput');
+  const caption = document.getElementById('mediaCaption').value;
+  const status = document.getElementById('uploadStatus');
+  
+  if (!fileInput.files[0]) {
+    status.textContent = '❌ Please select a file';
+    status.style.color = '#f44336';
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  const isVideo = file.type.startsWith('video');
+  const fileSize = (file.size / 1024 / 1024).toFixed(2);
+  
+  // Check size
+  const maxSize = isVideo ? 50 : 5;
+  if (file.size > maxSize * 1024 * 1024) {
+    status.textContent = `❌ Too large! Max ${maxSize}MB`;
+    status.style.color = '#f44336';
+    return;
+  }
+  
+  status.textContent = `📤 Uploading ${isVideo ? 'video' : 'photo'} (${fileSize}MB)...`;
+  status.style.color = '#FF9800';
+  
+  const currentStage = getCurrentStage ? getCurrentStage() : 'mainstage';
+  
+  const formData = new FormData();
+  formData.append('media', file);
+  formData.append('festivalId', festivalId);
+  formData.append('stageId', currentStage);
+  formData.append('userId', userId);
+  formData.append('location', JSON.stringify({ lat: 0, lng: 0 }));
+  formData.append('caption', caption);
+  
+  try {
+    const response = await fetch('http://localhost:3001/upload-media', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      status.textContent = '✅ Uploaded successfully!';
+      status.style.color = '#4CAF50';
+      fileInput.value = '';
+      document.getElementById('mediaCaption').value = '';
+      setTimeout(() => status.textContent = '', 3000);
+    } else {
+      status.textContent = '❌ Failed: ' + data.error;
+      status.style.color = '#f44336';
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    status.textContent = '❌ Error';
+    status.style.color = '#f44336';
+  }
+}
+
+// Listen for new media
+socket.on('new-media', (data) => {
+  console.log('📸 New media:', data);
+  addMediaToGallery(data.media);
+});
+
+// Listen for likes
+socket.on('media-liked', (data) => {
+  updateMediaLikes(data.mediaId, data.likes);
+});
+
+// Add media to gallery
+function addMediaToGallery(media) {
+  const gallery = document.getElementById('mediaGallery');
+  
+  if (document.getElementById(`media-${media.id}`)) return;
+  
+  const card = document.createElement('div');
+  card.id = `media-${media.id}`;
+  card.style.cssText = 'background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; transition: transform 0.2s;';
+  card.onmouseenter = () => card.style.transform = 'scale(1.05)';
+  card.onmouseleave = () => card.style.transform = 'scale(1)';
+  
+  const mediaEl = media.type === 'video' 
+    ? `<video src="${media.url}" style="width: 100%; height: 200px; object-fit: cover; background: #000;" controls></video>`
+    : `<img src="${media.url}" style="width: 100%; height: 200px; object-fit: cover;">`;
+  
+  const icon = media.type === 'video' ? '🎥' : '📸';
+  
+  card.innerHTML = `
+    ${mediaEl}
+    <div style="padding: 15px;">
+      <div style="font-size: 16px; margin-bottom: 5px;">${icon}</div>
+      <div style="font-size: 14px; margin-bottom: 10px;">${media.caption || '<em style="opacity: 0.6;">No caption</em>'}</div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="font-size: 12px; opacity: 0.8;">📍 ${media.stageId}</span>
+        <button onclick="likeMedia('${media.id}', '${media.stageId}')" 
+                style="background: none; border: none; cursor: pointer; font-size: 18px;">
+          ❤️ <span id="likes-${media.id}">${media.likes || 0}</span>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  gallery.prepend(card);
+}
+
+// Like media
+function likeMedia(mediaId, stageId) {
+  socket.emit('like-media', {
+    festivalId,
+    stageId,
+    mediaId,
+    userId
+  });
+}
+
+// Update likes
+function updateMediaLikes(mediaId, likes) {
+  const el = document.getElementById(`likes-${mediaId}`);
+  if (el) el.textContent = likes;
+}
+
+// Load existing media
+async function loadExistingMedia() {
+  const loading = document.getElementById('mediaLoading');
+  const gallery = document.getElementById('mediaGallery');
+  
+  try {
+    const response = await fetch(`http://localhost:3001/api/media/${festivalId}`);
+    const data = await response.json();
+    
+    if (data.success && data.media) {
+      console.log(`Loading ${data.media.length} media`);
+      data.media.forEach(m => addMediaToGallery(m));
+      loading.style.display = 'none';
+      gallery.style.display = 'grid';
+      if (data.media.length === 0) {
+        gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px;">No media yet!</p>';
+      }
+    }
+  } catch (error) {
+    console.error('Load error:', error);
+    loading.textContent = '❌ Error loading';
+  }
+}
+
+// Load after 2 seconds
+setTimeout(loadExistingMedia, 2000);
+
   </script>
 </body>
 </html>
